@@ -1,83 +1,76 @@
 <template>
   <div class="container">
-    <div class="header d-flex justify-content-between mb-2 align-items-center">
-      <h2>Next events</h2>
+    <div class="header d-flex justify-content-between mb-4 align-items-center">
+      <h1>Next events</h1>
       <div>
-        <input
-          v-model="searchValue"
-          type="text"
-          class="form-control"
-          id="search-input"
-          placeholder="Search Event"
-        />
+        <input type="text" placeholder=" Search" v-model="search" />
       </div>
     </div>
-    <ul class="list-group">
+
+    <ul class="list-group" v-if="data != ''">
       <li
-        v-for="(event, index) in eventsComputed"
+        class="list-group-item p-0 border-custom"
+        v-for="(event, index) in dataComputed"
         :key="index"
-        class="list-group-item"
       >
-        <div :class="availabilityBar(index)">
+        <div :class="availability(index)">
           <div
-            class="event-item d-flex justify-content-between ms-2 mt-3 align-items-center"
+            class="event d-flex justify-content-between ms-4 py-3 align-items-center"
           >
-            <div class="name-event text-start">
+            <div class="text-start">
               <h1 class="mb-0">{{ event.name }}</h1>
-             
               <p class="small-text mt-n1">
                 {{ event.eventStart | moment("DD.MM.YYYY") }} from
                 {{ event.eventStart | moment("HH:mm") }} to
-                {{ event.eventEnd | moment("HH:mm") }} 
-                
-                <!-- 
-                  let to = moment(eventEnd);
-                  let from = moment(eventStart);
-                  durationTime = moment.duration(to.diff(from)).as("hours"); -->
-                  () HOURS
-                </p>
+                {{ event.eventEnd | moment("HH:mm") }}
+                ({{ durationEventTime(event) }}h)
+              </p>
             </div>
             <div class="d-flex justify-content-between">
               <div class="text-end me-5">
-                <p class="small-text mb-0">Availability</p>
-                <p class="ratio-availability">
+                <p class="availability-text mb-0">Availability</p>
+                <p class="ratio-availability-text mt-n1">
                   {{ event.booked }}/{{ event.capacity }}
                 </p>
               </div>
               <div>
+                <!-- button expand open  -->
                 <button
-                  @click.prevent="buttonOpen(index)"
-                  class="custom-button btn-open-cancel mx-3"
+                  class="button btn-open-cancel mx-3"
+                  @click="buttonOpenCard(index)"
                 >
-                  <a href="#" v-if="index == activeEvent && seenOpen"> Close</a>
+                  <a href="#" v-if="thisItem == index && expandedCard">
+                    Close</a
+                  >
                   <a href="#" v-else> Open</a>
                 </button>
               </div>
             </div>
           </div>
-          <!-- EXPENDEND OPEN -->
-          <div v-show="index == activeEvent && seenOpen">
+          <!-- expanded view -->
+          <div v-show="thisItem == index && expandedCard">
             <div
-              class="d-flex justify-content-between ms-2 mt-3 mb-2 align-items-center"
+              class="d-flex justify-content-between ps-3 pb-2 align-items-center"
             >
               <div
-                v-show="index == activeEvent && seenEdit"
                 class="description"
+                v-show="thisItem == index && openEdition"
               >
-                <textarea v-model="description" class="text-description">
+                <textarea class="text-description" v-model="description">
                 </textarea>
               </div>
               <div
-                v-show="index == activeEvent && !seenEdit"
                 class="description"
+                v-show="thisItem == index && !openEdition"
               >
                 <p class="text-description">{{ event.description }}</p>
               </div>
               <div class="me-2">
+                <!-- button save -->
                 <button
-                  v-show="index == activeEvent && seenEdit"
+                  class="button btn-save mx-1"
                   @click="saveUpdate(index)"
-                  class="custom-button btn-save mx-1"
+                  v-show="thisItem == index && openEdition"
                 >
                   <font-awesome-icon
                     id="icon"
@@ -85,18 +78,20 @@
                   />
                   <a href="#"> Save</a>
                 </button>
+                <!-- button cancel  -->
                 <button
-                  class="custom-button btn-open-cancel mx-1"
-                  v-show="index == activeEvent && seenEdit"
-                  @click.prevent="buttonEdit(index)"
+                  class="button btn-open-cancel mx-1"
+                  @click.prevent="buttonOpenCancelEdit(index)"
+                  v-show="thisItem == index && openEdition"
                 >
                   <font-awesome-icon id="icon" icon="fa-regular fa-face-meh" />
                   <a href="#"> Cancel</a>
                 </button>
+                <!-- button open edition  -->
                 <button
-                  class="custom-button btn-edit mx-1"
-                  v-show="index == activeEvent && !seenEdit"
-                  @click.prevent="buttonEdit(index)"
+                  @click.prevent="buttonOpenCancelEdit(index)"
+                  class="button btn-edit mx-1"
+                  v-show="thisItem == index && !openEdition"
                 >
                   <font-awesome-icon
                     id="icon"
@@ -104,12 +99,14 @@
                   />
                   <a href="#"> Edit</a>
                 </button>
+
+                <!-- button delete  -->
                 <button
                   @click="deleteEvent(event)"
-                  class="custom-button btn-delete mx-1"
+                  class="button btn-delete mx-1"
                 >
                   <font-awesome-icon id="icon" icon="fa-regular fa-trash-can" />
-                  <a href="#">Delete</a>
+                  <a href="#"> Delete</a>
                 </button>
               </div>
             </div>
@@ -117,27 +114,30 @@
         </div>
       </li>
     </ul>
+
+    <div v-else>{{ this.$store.state.errorMessage }}</div>
   </div>
 </template>
 
 <script>
-//import moment from 'moment'
+import moment from "moment";
 export default {
   name: "NextEvents",
+
   data() {
     return {
+      expandedCard: false,
+      openEdition: false,
       description: "",
-      activeEvent: "",
-      seenEdit: false,
-      seenOpen: false,
-      searchValue: "",
+      thisItem: "",
+      search: "",
     };
   },
   methods: {
     saveUpdate(index) {
-      this.seenEdit = !this.seenEdit;
+      this.openEdition = !this.openEdition;
       if (this.description != "") {
-        const updatEvents = {
+        const updateEvent = {
           booked: this.$store.state.events[index].booked,
           capacity: this.$store.state.events[index].capacity,
           description: this.description,
@@ -146,166 +146,185 @@ export default {
           id: this.$store.state.events[index].id,
           name: this.$store.state.events[index].name,
         };
-        this.$store.dispatch("SAVE_UPDATE", updatEvents);
+        this.$store.dispatch("SAVE_UPDATE", updateEvent);
       }
       this.description = "";
     },
-
     deleteEvent(event) {
-      console.log(event);
+      //console.log(event);
       this.$store.dispatch("DELETE_EVENT", event);
     },
-    availabilityBar(index) {
+    availability(index) {
       let availability =
-        ((this.eventsComputed[index].capacity -
-          this.eventsComputed[index].booked) *
+        ((this.dataComputed[index].capacity - this.dataComputed[index].booked) *
           100) /
-        this.eventsComputed[index].capacity;
-      if (availability <= 20) return "highAvailability";
+        this.dataComputed[index].capacity;
+      if (availability <= 20) return "card highAvailability";
       else if (availability >= 21 && availability <= 90)
-        return "mediumAvailability";
-      else return "lowAvailability";
+        return "card mediumAvailability";
+      else return "card lowAvailability";
     },
-    buttonOpen(index) {
-      this.seenOpen = !this.seenOpen;
-      this.seenEdit = false;
-      this.activeEvent = index;
+    buttonOpenCard(index) {
+      this.expandedCard = !this.expandedCard;
+      this.openEdition = false;
+      this.thisItem = index;
     },
-    buttonEdit(index) {
-      this.seenEdit = !this.seenEdit;
-      this.activeEvent = index;
+    buttonOpenCancelEdit(index) {
+      this.openEdition = !this.openEdition;
+      this.thisItem = index;
       this.description = "";
+    },
+    durationEventTime(event) {
+      const { eventEnd, eventStart } = event;
+      const to = moment(eventEnd);
+      const from = moment(eventStart);
+      const durationTime = moment.duration(to.diff(from)).as("hours");
+      return durationTime;
     },
   },
   computed: {
-    allEvents() {
+    data() {
       return this.$store.state.events;
     },
-    eventsComputed() {
-      let searchEvents = this.allEvents;
-      if (this.searchValue != "" && this.searchValue) {
+    dataComputed() {
+      let searchEvents = this.data;
+      if (this.search != "" && this.search) {
         searchEvents = searchEvents.filter((item) => {
           return (
-            item.name.toUpperCase().includes(this.searchValue.toUpperCase()),
-            item.description
-              .toUpperCase()
-              .includes(this.searchValue.toUpperCase())
+            item.name.toUpperCase().includes(this.search.toUpperCase()),
+            item.description.toUpperCase().includes(this.search.toUpperCase())
           );
         });
       }
       return searchEvents;
     },
-  
-    // durationTime(){
-    //   let to = moment(eventEnd);
-    //               let from = moment(eventStart);
-    //               durationTime = moment.duration(to.diff(from)).as("hours")
-    //   return this.$store.state.events.map((event)=>({
-    //     ...event,
-    //     eventEnd: moment(event.eventEnd).format("DD.MM.YYYY")
-      
-    //   }))
-    // },
-
   },
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+.header h1 {
+  font-size: 14pt;
+  font-weight: 500;
+  color: #4b536b;
+  margin-bottom: 0;
+  margin-left: 10px;
+}
+.event h1 {
+  font-size: 16pt;
+  font-weight: 500;
+  color: #4b536b;
+}
+textarea:focus,
+input:focus {
+  outline: none;
+}
+textarea {
+  border: none;
+  padding: 5px;
+  width: 100%;
+  height: 100%;
+  resize: none;
+}
+input {
+  font-size: 11pt;
+  border: 1px solid #d3d7db;
+  padding: 4px;
+}
+button a {
+  color: #fff;
+  text-decoration: none;
+}
+
 .container {
   width: 70%;
   height: 70%;
 }
-.highAvailability {
-  border: 1px solid #d3d7db;
+.card {
+  border-top: none;
   border-left: 18px solid;
+  border-radius: 0;
+  background-color: #f6f7f9;
+}
+.availability-text {
+  font-size: 12pt;
+  font-weight: 400;
+  color: #979797;
+}
+.ratio-availability-text {
+  font-size: 12pt;
+  font-weight: 500;
+  color: #4b536b;
+}
+.text-description {
+  font-size: 12pt;
+  font-weight: 400;
+  color: #4b536b;
+}
+.small-text {
+  font-size: 10pt;
+  font-weight: 400;
+  color: #979797;
+}
+.highAvailability {
   border-left-color: #6ac951;
 }
-.list-group-item {
-  background: #fcfafa;
-}
 .lowAvailability {
-  border: 1px solid #d3d7db;
-  border-left: 18px solid;
   border-left-color: #ff5533;
 }
-
+.mediumAvailability {
+  border-left-color: #ffc764;
+}
 .mt-n1 {
   margin-top: -0.25rem !important;
 }
-.mediumAvailability {
-  border: 1px solid #d3d7db;
-  border-left: 18px solid;
-  border-left-color: #ffc764;
-}
-
-h2 {
-  margin-bottom: 0;
-  margin-left: 10px;
-  color: #4b536b;
-  font-size: 18pt;
-  font-weight: 500;
-}
-h1 {
-  color: #4b536b;
-  font-size: 18pt;
-  font-weight: 500;
+.border-custom {
+  border-left: 0;
+  border-top: 0;
+  border-right: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #d3d7db;
 }
 .description {
+  text-align: justify;
   margin-left: 0.5rem;
   width: 45%;
-  text-align: justify;
 }
-.text-description {
-  color: #4b536b;
-  font-size: 11pt;
-  font-weight: 400;
-}
-.small-text {
-  color: #979797;
-  font-size: 10pt;
-  font-weight: 400;
-}
-.ratio-availability {
-  color: #4b536b;
-  font-size: 12pt;
-  font-weight: 500;
-}
-a {
-  text-decoration: none;
-  color: #fff;
-}
-.custom-button {
+
+.button {
   padding: 10px 22px;
   border-radius: 5px;
 }
-.custom-button a {
-  font-size: 10pt;
-  font-weight: 500;
+.button a {
+  font-size: 12pt;
+  font-weight: 400;
   color: #fff;
 }
 .btn-open-cancel {
-  background: #f1f1f8;
   border: 1px solid #d3d7db;
+  background: #f1f1f8;
 }
+
 .btn-open-cancel a {
   color: #4b536b;
 }
 .btn-open-cancel #icon {
   color: #4b536b;
 }
-.btn-delete {
-  background: #f16c64;
-  border: 1px solid #4a526a;
-}
-.btn-save {
-  background: #6ac951;
-  border: 1px solid #4a526a;
-}
 .btn-edit {
   background: #00a9f0;
-  border: 1px solid #4b536b;
+  border-color: rgba(75, 83, 107, 0.4);
+}
+.btn-delete {
+  border: 1px solid;
+  background: #f16c64;
+  border-color: rgba(74, 82, 106, 0.35);
+}
+.btn-save {
+  border: 1px solid;
+  background: #6ac951;
+  border-color: rgba(74, 82, 106, 0.35);
 }
 #icon {
   color: #fff;

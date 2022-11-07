@@ -7,30 +7,35 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     events: [],
+    errorMessage: "",
   },
   mutations: {
     SET_EVENTS(state, getEvents) {
       state.events = getEvents;
     },
+    SET_ERROR(state, setError) {
+      state.errorMessage = setError;
+    },
 
     DELETE_EVENT(state, eventsNow) {
       state.events = eventsNow;
     },
-    SAVE_UPDATE(state, eventUpdated) {
-      state.events = eventUpdated;
+    SAVE_UPDATE(state, eventsUpdated) {
+      state.events = eventsUpdated;
     },
   },
-  getters: {},
   actions: {
     getEvents({ commit }) {
       api("/event/getall")
         .then((res) => {
           const getEvents = res.data.events;
-          // console.log(res.data.events);
+          console.log(res.data.events);
           commit("SET_EVENTS", getEvents);
         })
         .catch((err) => {
+          const setError = err;
           console.error(err);
+          commit("SET_ERROR", setError);
         });
     },
     DELETE_EVENT({ commit }, event) {
@@ -45,17 +50,16 @@ export default new Vuex.Store({
         });
     },
 
-    SAVE_UPDATE({ commit }, updatEvents) {
+    SAVE_UPDATE({ commit }, updateEvent) {
       api
-        .post("/event/edit", updatEvents)
+        .post("/event/edit", updateEvent)
         .then((res) => {
-          const eventUpdated = res.data.events;
-          commit("SAVE_UPDATE", eventUpdated);
+          const eventsUpdated = res.data.events;
+          commit("SAVE_UPDATE", eventsUpdated);
         })
         .catch((err) => {
           console.error(err);
         });
     },
   },
-  modules: {},
 });
