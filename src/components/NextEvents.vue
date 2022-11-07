@@ -56,8 +56,10 @@
                 class="description"
                 v-show="thisItem == index && openEdition"
               >
-                <textarea class="text-description" v-model="description">
-                </textarea>
+                <textarea
+                  class="text-description"
+                  v-model="description"
+                ></textarea>
               </div>
               <div
                 class="description"
@@ -81,7 +83,7 @@
                 <!-- button cancel  -->
                 <button
                   class="button btn-open-cancel mx-1"
-                  @click.prevent="buttonOpenCancelEdit(index)"
+                  @click.prevent="buttonCancelEdit(index)"
                   v-show="thisItem == index && openEdition"
                 >
                   <font-awesome-icon id="icon" icon="fa-regular fa-face-meh" />
@@ -89,7 +91,7 @@
                 </button>
                 <!-- button open edition  -->
                 <button
-                  @click.prevent="buttonOpenCancelEdit(index)"
+                  @click.prevent="buttonOpenEdit(index)"
                   class="button btn-edit mx-1"
                   v-show="thisItem == index && !openEdition"
                 >
@@ -169,7 +171,12 @@ export default {
       this.openEdition = false;
       this.thisItem = index;
     },
-    buttonOpenCancelEdit(index) {
+    buttonOpenEdit(index) {
+      this.openEdition = !this.openEdition;
+      this.thisItem = index;
+      this.description = this.$store.state.events[index].description;
+    },
+    buttonCancelEdit(index) {
       this.openEdition = !this.openEdition;
       this.thisItem = index;
       this.description = "";

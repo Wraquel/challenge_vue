@@ -55,6 +55,7 @@ export default new Vuex.Store({
         .post("/event/edit", updateEvent)
         .then((res) => {
           const eventsUpdated = res.data.events;
+          console.log(eventsUpdated)
           commit("SAVE_UPDATE", eventsUpdated);
         })
         .catch((err) => {
