@@ -57,6 +57,8 @@
                 v-show="thisItem == index && openEdition"
               >
                 <textarea
+                rows="4"
+                cols="6"
                   class="text-description"
                   v-model="description"
                 ></textarea>
